@@ -4,57 +4,48 @@ pragma solidity ^0.8.9;
 //import "hardhat/console.sol";
 
 contract Assessment {
-    address payable public owner;
+    address payable public owner; 
     uint256 public balance;
 
-    event Deposit(uint256 amount);
-    event Withdraw(uint256 amount);
+    event Deposit(address indexed from, uint256 amount);
+    event Withdraw(address indexed from, uint256 amount);
 
-    constructor(uint initBalance) payable {
+    // Constructor to set the initial balance and owner of the contract
+    constructor(uint256 initBalance) payable {
         owner = payable(msg.sender);
-        balance = initBalance;
+        balance = initBalance; 
     }
 
-    function getBalance() public view returns(uint256){
-        return balance;
+    // Function to get the current balance of the contract
+    function getBalance() public view returns (uint256) {
+        return balance; // Returns the contract's current balance
     }
 
-    function deposit(uint256 _amount) public payable {
-        uint _previousBalance = balance;
-
-        // make sure this is the owner
-        require(msg.sender == owner, "You are not the owner of this account");
-
-        // perform transaction
-        balance += _amount;
-
-        // assert transaction completed successfully
-        assert(balance == _previousBalance + _amount);
-
-        // emit the event
-        emit Deposit(_amount);
+    function deposit() public payable {
+        require(msg.value > 0, "Deposit amount must be greater than zero");
+        balance += msg.value; // Increase the contract balance by the deposited amount
+        emit Deposit(msg.sender, msg.value);
     }
 
-    // custom error
+    // Custom error for handling insufficient balance during withdrawal
     error InsufficientBalance(uint256 balance, uint256 withdrawAmount);
 
     function withdraw(uint256 _withdrawAmount) public {
-        require(msg.sender == owner, "You are not the owner of this account");
-        uint _previousBalance = balance;
+        // Check if the contract has enough balance to allow the withdrawal
         if (balance < _withdrawAmount) {
             revert InsufficientBalance({
-                balance: balance,
+                balance: balance, 
                 withdrawAmount: _withdrawAmount
-            });
+            }); // Revert the transaction if the contract's balance is too low
         }
 
-        // withdraw the given amount
-        balance -= _withdrawAmount;
+        balance -= _withdrawAmount; // Decrease the contract's balance by the withdrawal amount
+        payable(msg.sender).transfer(_withdrawAmount); // Transfer the requested amount to the sender
+        emit Withdraw(msg.sender, _withdrawAmount); 
+    }
 
-        // assert the balance is correct
-        assert(balance == (_previousBalance - _withdrawAmount));
-
-        // emit the event
-        emit Withdraw(_withdrawAmount);
+    // Fallback function to accept any incoming ETH payments
+    receive() external payable {
+        balance += msg.value; // Increase the contract balance by the amount sent to the contract
     }
 }
