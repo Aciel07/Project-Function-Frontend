@@ -28,23 +28,6 @@ After cloning the github, you will want to do the following to get the code runn
 
 After this, the project will be running on your localhost. 
 Typically at http://localhost:3000/
-Sure! Here's an example of a README file for your Ethereum ATM application:
 
-```markdown
-
-## Code Overview
-
-### Smart Contract (`Assessment.sol`)
-
-- The smart contract is written in Solidity and allows users to deposit and withdraw ETH.
-- The contract uses `deposit()` and `withdraw(uint256)` functions for interactions.
-- Events `Deposit` and `Withdraw` are emitted for logging the transactions.
-- A custom error `InsufficientBalance` is defined for better error handling.
-
-### Frontend (`index.js`)
-
-- Built using React, this app interacts with the Ethereum blockchain via the Web3 provider (`ethers.js`).
-- The contract ABI and address are used to initialize the contract instance.
-- Users can deposit and withdraw ETH through the interface by interacting with the smart contract.
-- The application tracks the user's account, balance, and loading states.
+![image](https://github.com/user-attachments/assets/990c05ba-4f5c-47a9-959d-a2c7629f56c7)
 
