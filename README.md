@@ -1,15 +1,5 @@
-# Ethereum ATM
-
-Ethereum ATM is a decentralized application (DApp) that allows users to deposit and withdraw Ether (ETH) from a smart contract using MetaMask. This DApp uses Solidity for the smart contract, deployed on the Ethereum blockchain, and interacts with the contract through a React-based frontend.
-
-## Features
-
-- **Connect to MetaMask**: Users can connect their MetaMask wallet to the DApp.
-- **Deposit ETH**: Users can deposit Ether (ETH) into the contract.
-- **Withdraw ETH**: Users can withdraw Ether (ETH) from the contract.
-- **View Balance**: Displays the current balance of the contract in ETH.
-
-## Prerequisites
+# Donation Box
+The DonationBox contract is a simple decentralized application (DApp) that allows users to donate Ether to the contract. The contract owner can withdraw the donated funds. It includes a donation function to accept Ether, a function to check the contract's balance, and a withdrawal function that only the owner can use to transfer the funds to their address.
 
 To run this DApp locally, you need the following installed:
 
@@ -28,6 +18,4 @@ After cloning the github, you will want to do the following to get the code runn
 
 After this, the project will be running on your localhost. 
 Typically at http://localhost:3000/
-
-![image](https://github.com/user-attachments/assets/990c05ba-4f5c-47a9-959d-a2c7629f56c7)
 
