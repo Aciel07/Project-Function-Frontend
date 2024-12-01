@@ -19,3 +19,4 @@ After cloning the github, you will want to do the following to get the code runn
 After this, the project will be running on your localhost. 
 Typically at http://localhost:3000/
 
+![image](https://github.com/user-attachments/assets/f49fbb6e-9047-4e92-8af7-658dcd2b1517)
