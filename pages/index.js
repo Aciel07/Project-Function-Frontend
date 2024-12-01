@@ -1,179 +1,127 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { ethers } from "ethers";
-import atm_abi from "../artifacts/contracts/Assessment.sol/Assessment.json";
 
-export default function HomePage() {
-  // State variables to hold data and track UI states
-  const [ethWallet, setEthWallet] = useState(undefined);
-  const [account, setAccount] = useState(undefined); 
-  const [atm, setATM] = useState(undefined);
-  const [balance, setBalance] = useState(undefined); 
-  const [isLoading, setIsLoading] = useState(false);
-  const [depositAmount, setDepositAmount] = useState("");
-  const [withdrawAmount, setWithdrawAmount] = useState(""); 
-  const [errorMessage, setErrorMessage] = useState("");
+const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3"; // Ensure it's correct
+const contractABI = [
+  {
+    "inputs": [],
+    "name": "donate",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getBalance",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+];
 
-  // The Ethereum contract address and ABI
-  const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
-  const atmABI = atm_abi.abi;
+function App() {
+  const [account, setAccount] = useState(null);
+  const [balance, setBalance] = useState("0");
+  const [donationAmount, setDonationAmount] = useState("");
 
-  // useEffect hook to initialize MetaMask wallet and get account information on page load
   useEffect(() => {
+    if (account) {
+      fetchBalance();
+    }
+  }, [account]);
+
+  async function connectWallet() {
     if (window.ethereum) {
-      setEthWallet(window.ethereum); // Set the Ethereum wallet (MetaMask) if it exists
-      getWallet(); // Fetch the wallet and account details
+      try {
+        const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+        setAccount(accounts[0]);
+      } catch (error) {
+        console.error("Wallet connection failed:", error);
+      }
     } else {
-      alert("MetaMask is not installed"); // Alert if MetaMask is not installed
+      alert("MetaMask is not installed!");
     }
-  }, []);
+  }
 
-  // Get wallet and account details
-  const getWallet = async () => {
-    if (ethWallet) {
-      const accounts = await ethWallet.request({ method: "eth_accounts" }); // Request MetaMask accounts
-      handleAccount(accounts); // Handle the fetched account
-    }
-  };
-
-  // Handle the fetched account
-  const handleAccount = (account) => {
-    if (account.length > 0) {
-      console.log("Account connected: ", account[0]); // Log account address
-      setAccount(account[0]); // Set the account in state
-      getATMContract(); // Initialize contract after account is connected
-    } else {
-      console.log("No account found"); // Log if no account is found
-    }
-  };
-
-  // Connect to MetaMask if not connected
-  const connectAccount = async () => {
-    if (!ethWallet) {
-      alert("MetaMask wallet is required to connect"); // Alert if MetaMask is missing
-      return;
-    }
+  async function fetchBalance() {
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const contract = new ethers.Contract(contractAddress, contractABI, provider);
 
     try {
-      const accounts = await ethWallet.request({ method: "eth_requestAccounts" }); // Request MetaMask accounts
-      handleAccount(accounts); // Handle the fetched account
+      const balance = await contract.getBalance();
+      setBalance(ethers.utils.formatEther(balance));
     } catch (error) {
-      console.error("Error connecting to MetaMask:", error); // Log any error
-      alert("Please allow MetaMask to connect to your browser."); // Alert the user to allow connection
+      console.error("Error fetching balance:", error);
     }
-  };
+  }
 
-  // Initialize contract by setting up the signer and contract instance
-  const getATMContract = () => {
-    const provider = new ethers.providers.Web3Provider(ethWallet); 
-    const signer = provider.getSigner(); 
-    const atmContract = new ethers.Contract(contractAddress, atmABI, signer); 
-    setATM(atmContract); 
-    getBalance(); 
-  };
-
-  // Get balance of the contract (ETH held in the contract)
-  const getBalance = async () => {
-    if (atm) {
+  async function donate() {
+    if (window.ethereum && donationAmount) {
       try {
-        const balance = await atm.getBalance();
-        setBalance(ethers.utils.formatEther(balance)); 
-      } catch (error) {
-        setErrorMessage("Error fetching balance"); // Set error message if fetching balance fails
-        console.error("Error fetching balance:", error); // Log any errors
-      }
-    }
-  };
-
-  // Deposit funds into the contract
-  const deposit = async () => {
-    if (atm && depositAmount && !isLoading) {
-      try {
-        setIsLoading(true); 
-        setErrorMessage("");
-        const provider = new ethers.providers.Web3Provider(ethWallet);
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
         const signer = provider.getSigner();
+        const contract = new ethers.Contract(contractAddress, contractABI, signer);
 
-        const tx = await atm.connect(signer).deposit({
-          value: ethers.utils.parseEther(depositAmount), 
+        const tx = await contract.donate({
+          value: ethers.utils.parseEther(donationAmount),
         });
-        await tx.wait(); 
-        await getBalance(); // Refresh balance after deposit
-      } catch (error) {
-        setErrorMessage("Deposit failed"); 
-        console.error("Deposit failed:", error); // Log any errors
-      } finally {
-        setIsLoading(false); // Reset loading state after transaction completes
-      }
-    }
-  };
 
-  // Withdraw funds from the contract
-  const withdraw = async () => {
-    if (atm && withdrawAmount && !isLoading) {
-      try {
-        setIsLoading(true);
-        setErrorMessage("");
-        const provider = new ethers.providers.Web3Provider(ethWallet); 
-        const signer = provider.getSigner(); 
-
-        const tx = await atm.connect(signer).withdraw(ethers.utils.parseEther(withdrawAmount)); 
-        await tx.wait(); 
-        await getBalance();
+        console.log("Transaction sent:", tx.hash);
+        await tx.wait();
+        alert("Donation successful!");
+        fetchBalance();
       } catch (error) {
-        setErrorMessage("Withdraw failed"); // Set error message if withdraw fails
-        console.error("Withdraw failed:", error); // Log any errors
-      } finally {
-        setIsLoading(false); // Reset loading state after transaction completes
+        console.error("Donation failed:", error);
+        alert(`Error: ${error.message}`);
       }
+    } else {
+      alert("Enter a valid donation amount or connect your wallet.");
     }
-  };
+  }
 
   return (
-    <div className="container">
-      <div className="content">
-        <center>
-          <h1>Ethereum ATM</h1>
-          <p>Your Account: {account}</p>
-          <p>Your Balance: {balance} ETH</p>
-
-          {!account ? (
-            <button onClick={connectAccount}>Connect Wallet</button> // Show Connect Wallet button if not connected
-          ) : (
-            <>
-              {/* Deposit Section */}
-              <div className="section">
-                <h3>Deposit Funds</h3>
-                <input
-                  type="text"
-                  placeholder="Amount (ETH)"
-                  value={depositAmount}
-                  onChange={(e) => setDepositAmount(e.target.value)} // Set deposit amount
-                />
-                <button onClick={deposit} disabled={isLoading}>
-                  {isLoading ? "Depositing..." : "Deposit"}
-                </button>
-              </div>
-
-              {/* Withdraw Section */}
-              <div className="section">
-                <h3>Withdraw Funds</h3>
-                <input
-                  type="text"
-                  placeholder="Amount (ETH)"
-                  value={withdrawAmount}
-                  onChange={(e) => setWithdrawAmount(e.target.value)} // Set withdraw amount
-                />
-                <button onClick={withdraw} disabled={isLoading}>
-                  {isLoading ? "Withdrawing..." : "Withdraw"}
-                </button>
-              </div>
-            </>
-          )}
-        </center>
-
-        {/* Display error message if any */}
-        {errorMessage && <div className="error">{errorMessage}</div>}
-      </div>
+    <div style={styles.container}>
+      <header style={styles.header}>
+        <h1 style={styles.title}>Donation Box DApp</h1>
+        <button onClick={connectWallet} style={styles.button}>
+          {account ? `Connected: ${account.substring(0, 6)}...${account.substring(account.length - 4)}` : "Connect Wallet"}
+        </button>
+      </header>
+      <main style={styles.main}>
+        <div style={styles.card}>
+          <h2 style={styles.balance}>Contract Balance: {balance} ETH</h2>
+          <input
+            type="number"
+            placeholder="Enter amount in ETH"
+            value={donationAmount}
+            onChange={(e) => setDonationAmount(e.target.value)}
+            style={styles.input}
+          />
+          <button onClick={donate} style={styles.donateButton}>
+            Donate
+          </button>
+        </div>
+      </main>
     </div>
   );
 }
+
+const styles = {
+  container: { fontFamily: "Arial, sans-serif", margin: 0, padding: 0, minHeight: "100vh", backgroundColor: "#f0f2f5" },
+  header: { backgroundColor: "#007bff", padding: "1rem", display: "flex", justifyContent: "space-between", alignItems: "center", color: "#fff" },
+  title: { margin: 0, fontSize: "2rem" },
+  button: { backgroundColor: "#fff", color: "#007bff", padding: "0.8rem 1.5rem", fontSize: "1rem", borderRadius: "5px", border: "none", cursor: "pointer", fontWeight: "bold" },
+  main: { display: "flex", justifyContent: "center", alignItems: "center", height: "80vh" },
+  card: { backgroundColor: "#fff", padding: "2rem 3rem", borderRadius: "15px", boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)", textAlign: "center", maxWidth: "400px", width: "100%" },
+  balance: { fontSize: "1.5rem", marginBottom: "1.5rem" },
+  input: { width: "100%", padding: "1rem", marginBottom: "1rem", borderRadius: "10px", border: "1px solid #ddd", fontSize: "1rem" },
+  donateButton: { padding: "1rem 2rem", backgroundColor: "#28a745", color: "#fff", fontSize: "1rem", border: "none", borderRadius: "5px", cursor: "pointer" },
+};
+
+export default App;
